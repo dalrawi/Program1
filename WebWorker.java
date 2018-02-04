@@ -21,11 +21,14 @@
 **/
 
 import java.net.Socket;
-import java.lang.Runnable;
+import java.lang.*;
+
 import java.io.*;
 import java.util.*;
 import java.text.DateFormat;
 import java.util.TimeZone;
+
+
 
 public class WebWorker implements Runnable
 {
@@ -41,7 +44,6 @@ public WebWorker(Socket s)
    socket = s;
    serverName = "Danya's Server";
 }
-
 /**
 * Worker thread starting point. Each worker handles just one HTTP 
 * request and then returns, which destroys the thread. This method
@@ -56,10 +58,32 @@ public void run()
       OutputStream os = socket.getOutputStream();
       String url = readHTTPRequest(is);
       File f = new File(url);
-      if(f.exists()){ 
-         writeHTTPHeader(os,"text/html","200");
-         writeContent(os, f);
+      if(f.exists()){
+         if(url.endsWith(".html")){ 
+            writeHTTPHeader(os,"text/html","200");
+            writeHtmlContent(os, f);
+         }
+         else if(url.endsWith(".jpg") || url.endsWith(".jpeg")){
+            writeHTTPHeader(os,"image/jpeg","200");
+            //copy image bytes to output stream
+            java.nio.file.Files.copy(f.toPath(), os);
+         }
+         else if(url.endsWith(".png")){
+            writeHTTPHeader(os,"image/png","200");
+            java.nio.file.Files.copy(f.toPath(), os);
+         }
+         else if(url.endsWith(".gif")){
+            writeHTTPHeader(os,"image/gif","200");
+            java.nio.file.Files.copy(f.toPath(), os);
+         }
+         else if(url.endsWith(".ico")){
+            writeHTTPHeader(os,"image/x-icon","200");
+            java.nio.file.Files.copy(f.toPath(), os);
+         }
+
       }
+
+      
       else{
          writeHTTPHeader(os,"text/html","404");
          os.write("404 Not Found".getBytes());
@@ -92,10 +116,10 @@ private String readHTTPRequest(InputStream is)
          line = r.readLine();
          //string processing to extract file name and path from the request
          String[] requestLines = line.split(" ");
-         if(requestedPath == null && requestLines[0].contains("GET"))
+         if(requestedPath == null && requestLines[0].contains("GET")){
             //set filepath to the value after GET and remove '/' at the start
             requestedPath = requestLines[1].substring(1);
-      
+         }
          System.err.println("Request line: ("+line+")");
          if (line.length()==0) break;
       } catch (Exception e) {
@@ -142,15 +166,14 @@ private String getDateString(){
 * @param os is the OutputStream object to write to
 **/
 //changed method to take in the file to serve
-private void writeContent(OutputStream os, File fs) throws Exception
+private void writeHtmlContent(OutputStream os, File fs) throws Exception
 {
   //read html file content to a string and do the replacements
+  
   String content = new Scanner(fs).useDelimiter("\\Z").next();
   content = content.replace("<cs371date>",getDateString());
   content = content.replace("<cs371server>",serverName);
   os.write(content.getBytes());
-
-   
    
 }
 

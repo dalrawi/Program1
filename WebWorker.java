@@ -59,6 +59,7 @@ public void run()
       String url = readHTTPRequest(is);
       File f = new File(url);
       if(f.exists()){
+         //write appropriate MIME types to the header and serve the content
          if(url.endsWith(".html")){ 
             writeHTTPHeader(os,"text/html","200");
             writeHtmlContent(os, f);
@@ -165,7 +166,7 @@ private String getDateString(){
 * be done after the HTTP header has been written out.
 * @param os is the OutputStream object to write to
 **/
-//changed method to take in the file to serve
+//changed method to take in the file to serve as a parameter
 private void writeHtmlContent(OutputStream os, File fs) throws Exception
 {
   //read html file content to a string and do the replacements

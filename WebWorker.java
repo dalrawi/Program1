@@ -22,7 +22,7 @@
 
 import java.net.Socket;
 import java.lang.*;
-
+import java.nio.file.Files;
 import java.io.*;
 import java.util.*;
 import java.text.DateFormat;
@@ -58,40 +58,27 @@ public void run()
       OutputStream os = socket.getOutputStream();
       String url = readHTTPRequest(is);
       File f = new File(url);
+      //I'm handling the html extension case separately because it uses the writeHtmlContent method rather than Files.copy
       if(f.exists()){
-         //write appropriate MIME types to the header and serve the content
          if(url.endsWith(".html")){ 
             writeHTTPHeader(os,"text/html","200");
             writeHtmlContent(os, f);
          }
-         else if(url.endsWith(".jpg") || url.endsWith(".jpeg")){
-            writeHTTPHeader(os,"image/jpeg","200");
-            //copy image bytes to output stream
-            java.nio.file.Files.copy(f.toPath(), os);
-         }
-         else if(url.endsWith(".png")){
-            writeHTTPHeader(os,"image/png","200");
-            java.nio.file.Files.copy(f.toPath(), os);
-         }
-         else if(url.endsWith(".gif")){
-            writeHTTPHeader(os,"image/gif","200");
-            java.nio.file.Files.copy(f.toPath(), os);
-         }
-         else if(url.endsWith(".ico")){
-            writeHTTPHeader(os,"image/x-icon","200");
-            java.nio.file.Files.copy(f.toPath(), os);
-         }
-
+         //use the probeContentType method to get the MIME type of the requested file
+         else{
+	         java.nio.file.Path filePath = f.toPath();
+	         String mimeType = Files.probeContentType(filePath);
+	         writeHTTPHeader(os,mimeType,"200");
+	         Files.copy(filePath,os);
+	     }
       }
 
-      
       else{
          writeHTTPHeader(os,"text/html","404");
          os.write("404 Not Found".getBytes());
       }
 
-      
-      
+
       os.flush();
       socket.close();
    } catch (Exception e) {
